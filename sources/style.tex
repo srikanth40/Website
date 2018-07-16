@@ -1,0 +1,37 @@
+\usepackage{hyperref}
+
+% Below will configure hyperlink colors
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=blue,
+    urlcolor=blue,
+}
+\urlstyle{same}
+
+\usepackage{enumitem}
+
+% Below package is for precise positioning of images
+\usepackage{float}
+\usepackage{color}
+
+% Below package is for syntax highlighted code
+\usepackage{minted}
+% Below set global setting fro minted package like line wraps and frame
+\setminted{breaklines, frame=single}
+
+% Below package is for including images
+\usepackage{graphicx}
+\usepackage[a4paper, inner=1.5cm, outer=3cm, top=2cm,bottom=3cm, bindingoffset=1cm]{geometry}
+\setlength{\parskip}{.5em}
+
+% The LaTeX graphics/graphicx package uses the first dot to find the extension. Package grffile changes this algorithm. This helps in including images files whose name contains more than 1 dot
+\usepackage{grffile}
+
+
+% Below package will create headings
+%\pagestyle{headings}
+
+% Below package will used to specify captions like "Figure 1: Nice Figure" in minipages using \captionof{figure}{Nice Figure}
+\usepackage{caption}
+\usepackage{hypcap} %This is needed for some warning in minipages
