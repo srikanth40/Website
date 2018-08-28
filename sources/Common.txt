@@ -30,3 +30,17 @@ Code Listing:
     {BB6248C9-7748-4F74-9CBA-147BF261F206}, 1, C:\Programs\Sample.pdb
 ...
 \end{minted}
+
+
+Tables:
+\begin{center}
+\begin{tabular}{|c|c|c|}
+ Generation &x1         &x16          \\
+ \hline
+ Gen 1      &250 MB/s   &4 GB/s       \\
+ Gen 2      &500 MB/s   &8 GB/s       \\
+ Gen 3      &985 MB/s   &15.75 GB/s   \\
+ Gen 4      &1.969 GB/s &31.51 GB/s   \\
+ Gen 5      &3.938 GB/s &63 GB/s
+\end{tabular}
+\end{center}
