@@ -14,12 +14,14 @@
    \vspace*{\stretch{2.0}}
 \end{titlepage}
 
+\tableofcontents
+
 \newpage
 \section{Introduction}
 During the compilation one of the crucial step after assembling is
 creating the Object files. The collection of these object files is
-called a lib file. We can make these .lib files when creating below
-two type of projects
+called a lib file. We can create these .lib files through following
+visual studio project types
 1. Static Library
 2. Dynamic Linked Library
 
@@ -28,7 +30,7 @@ section of \href{https://docs.microsoft.com/en-us/windows/desktop/debug/pe-forma
 specification. As per the spec, .lib is an archive of individual .obj
 files with some metadata. Multiple tools can be used to
 extract lib files. Visual Studio installation contains Lib.exe tool.
-Because .lib and .obj files follow Unix COFF format Unix binutil's
+Since .lib and .obj files follow Unix COFF format Unix binutil's
 'ar' tool can be used to extract it.
 
 \begin{minted}{bat}
@@ -43,6 +45,12 @@ or
 
 use 7-Zip to extract it
 \end{minted}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{6.VSProjectDialog.png}
+\caption{Visual Studio New Project dialog for 'Static Library' and 'Dynamic Linked Library' }
+\end{figure}
 
 \section{Static Library}
 Static Library is created when you want to provide the complete code to
@@ -73,7 +81,7 @@ dumpbin /symbols StaticLib.lib  <-- shows all the symbols present
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{1.StaticLib.png}
-\caption{Static Library}
+\caption{Workflow for Static Library creation and consumption}
 \end{figure}
 
 \begin{figure}[H]
@@ -85,15 +93,15 @@ dumpbin /symbols StaticLib.lib  <-- shows all the symbols present
 \section{Dynamic Linked Library}
 Dynamic Linked Library(DLL) is in many ways similar to Static Library because
 it also provides the code to be used by other projects like dll or exe,
-but the difference is in the way the code gets used by them.
+but the difference is in the way the code gets re-used by consumers.
 In DLL, the outcome of the project is not only a .lib file but also a
 .dll file. In fact, in case of DLL project, the .lib file does not contain
-any .obj file instead it contains only pointers to which dll includes
-the code and how other projects can refer to it in their compilation.
-In Dll, all of the code is indeed present inside the .dll file.
+any .obj file instead it contains only pointers of exported functions to
+the dll containing the actual code. In a Dll, all of the code is indeed
+present inside the .dll file.
 
-Hence this is also the reason why we can only see the exported symbols
-but not their code in case of dll's .lib file.
+Since .lib does not contain any real .obj unlike static lib, we can
+only see the exported symbols but not their code in case of dll's .lib file.
 
 \begin{minted}{c}
 __declspec(dllexport) int add(int a)
@@ -109,7 +117,7 @@ dumpbin /exports Dll1.lib <-- shows all the exported functions
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{3.Dll.png}
-\caption{Dynamic Linked Library}
+\caption{Workflow for Dynamic Linked Library creation and consumption}
 \end{figure}
 \begin{figure}[H]
 \centering
@@ -120,6 +128,28 @@ dumpbin /exports Dll1.lib <-- shows all the exported functions
 NOTE: The functions inside a Dynamic Linked Library need to be declared
 with \_\_declspec(dllexport) if they have to be visible and consumed
 by others(indirectly).
+
+
+\section{Static Library with \_\_declspec(dllexport)}
+This is interesting. When a function inside a static library is declared
+with \_\_declspec(dllexport), like any other function, it gets included
+by the consumer in his binary(dll) but because it is declared as
+\_\_declspec(dllexport) that function gets exported as well from the consumer
+binary! Below is a screenshot of Consumer.exe which is exporting sub2 function
+because sub2 is actually declared with \_\_declspec(dllexport) in the
+original static library.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{5.StaticLibWithDeclSpec(DllExport).png}
+\caption{sub2 function got exported from the final consumer binary}
+\end{figure}
+
+
+The takeaway here is Static Libraries are just a convenient archive format
+to hold multiple .obj files nothing more or nothing less! So we should be
+cautious of how the functions are declared.
+
 
 \section{References}
 \begin{enumerate}[noitemsep]
