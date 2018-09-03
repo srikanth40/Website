@@ -50,7 +50,7 @@ link into another dll or exe. For example, If a static library
 project contains 4 files add.c,sub.c,mul.c,div.c containing functions
 for their operations like below respectively.
 \begin{minted}{c}
-__declspec(dllexport) int add(int a)
+int add(int a)
 {
     return a + 1;
 }
@@ -61,10 +61,25 @@ of each of the above .c file. So a static library contains all
 the code that gets compiled from your project, and this .lib will
 be consumed by any other project types(dll or exe).
 
+NOTE: The functions inside a Static Library is not declared with
+\_\_declspec(dllexport) because all functions declared in a static
+library are meant to be consumed/included by others directly.
+
+\begin{minted}{bat}
+dumpbin /exports StaticLib.lib  <-- shows nothing because .lib itself does not export anything
+dumpbin /symbols StaticLib.lib  <-- shows all the symbols present
+\end{minted}
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{1.StaticLib.png}
 \caption{Static Library}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics{2.StructureStaticLib.png}
+\caption{Concluded based on HxD view of the file}
 \end{figure}
 
 \section{Dynamic Linked Library}
@@ -75,16 +90,29 @@ In DLL, the outcome of the project is not only a .lib file but also a
 .dll file. In fact, in case of DLL project, the .lib file does not contain
 any .obj file instead it contains only pointers to which dll includes
 the code and how other projects can refer to it in their compilation.
-Here all of the code is indeed present inside the .dll file.
+In Dll, all of the code is indeed present inside the .dll file.
 
 Hence this is also the reason why we can only see the exported symbols
-but not their code in case of dll projects.
+but not their code in case of dll's .lib file.
+
+\begin{minted}{bat}
+dumpbin /exports Dll1.lib <-- shows all the exported functions
+\end{minted}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{2.Dll.png}
+\includegraphics[width=\textwidth]{3.Dll.png}
 \caption{Dynamic Linked Library}
 \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics{4.StructureDll.png}
+\caption{Concluded based on HxD view of the file}
+\end{figure}
+
+NOTE: The functions inside a Dynamic Linked Library need to be declared
+with \_\_declspec(dllexport) if they need to be visible and consumed
+by others(indirectly).
 
 \section{References}
 \begin{enumerate}[noitemsep]
