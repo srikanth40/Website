@@ -95,6 +95,13 @@ In Dll, all of the code is indeed present inside the .dll file.
 Hence this is also the reason why we can only see the exported symbols
 but not their code in case of dll's .lib file.
 
+\begin{minted}{c}
+__declspec(dllexport) int add(int a)
+{
+    return a + 1;
+}
+\end{minted}
+
 \begin{minted}{bat}
 dumpbin /exports Dll1.lib <-- shows all the exported functions
 \end{minted}
@@ -111,7 +118,7 @@ dumpbin /exports Dll1.lib <-- shows all the exported functions
 \end{figure}
 
 NOTE: The functions inside a Dynamic Linked Library need to be declared
-with \_\_declspec(dllexport) if they need to be visible and consumed
+with \_\_declspec(dllexport) if they have to be visible and consumed
 by others(indirectly).
 
 \section{References}
