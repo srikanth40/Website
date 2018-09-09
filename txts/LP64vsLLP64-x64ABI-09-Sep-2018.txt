@@ -4,9 +4,9 @@ language, I came to find that the size of long is 4 on Windows x64 when compiled
 with VC++ compiler. Interestingly, the size of long is 8 on Linux x64
 (via Godbolt compiler explorer) with clang. Now, there is clearly something else
 is contributing to these differences, And my assumption of on every x64 platform
-long is 4 bytes is incorrect and not all x64 platforms has same size neither.
+long is 4 bytes is incorrect and not all x64 platforms has same size either.
 
-This is when I tried to dig little deeper to answer "How does thesize of long
+This is when I tried to dig little deeper to answer "How does the size of long
 data type determined by the compilers?". The compilers determine(fix) the size
 of the data type according to the specification of Application Binary Interface
 (ABI) of the platform(OS). This is also called as "64-bit programming models".
@@ -28,8 +28,6 @@ long        64      64      32      32      32
 long long                   64
 pointer     64      64      64      32      32
 
-
-
 Most Unix systems follow AMD64/System V Application Binary Interface ABI. This
 specification talks about two models "Binaries using the AMD64 instruction set
 may program to either a 32-bit model, in which the C data types int, long and
@@ -46,6 +44,5 @@ System V Application Binary Interface AMD64 Architecture Processor Supplement
     https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
 Why did the Win64 team choose the LLP64 model?
     https://blogs.msdn.microsoft.com/oldnewthing/20050131-00/?p=36563
-
-
+https://docs.microsoft.com/en-us/windows/desktop/winprog64/abstract-data-models
 
