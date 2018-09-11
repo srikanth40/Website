@@ -18,15 +18,93 @@
 
 \newpage
 \section{Introduction}
-This article is about understanding how integer conversions happen in
-C language. C standard defines the integer conversion rules not specific
-to any particular architecure,
+This article is about understanding how integer conversions happen in C
+language. C standard defines the integer conversion rules not specific to any
+architecure. This makes things more complicated for the programmers to try and
+understand them.
 
-\section{Signed vs Unsigned numbers}
+Why do we need integer conversions at all? The answer is simple we need to have
+one single type for the expression that we are dealing with. Let's say we have
+an expression \textless expr1\textgreater \textless op\textgreater
+\textless expr2\textgreater  when expr1 and expr2 are different types, we
+want the resulting expression from this to have one type.
 
+Before going any further in to the details of the arthemetic conversions. Let's
+look at few basic concepts. The C99 specification refers to below types as
+standard integer types.
 
+\begin{enumerate}[noitemsep]
+    \item signed char
+    \item unsigned char
+    \item signed short
+    \item unsigned short
+    \item signed int
+    \item unsigned int
+    \item signed long
+    \item unsigned long
+    \item signed long long
+    \item unsigned long long
+\end{enumerate}
+
+One of the interesting fact about C language specification is, the sizes of
+these integer types is not defined at all. It only defines the minimum supported
+length. For example, int need not be 8 bytes long on x64 platforms, the only
+definition for int is it should have atleast 16 bits and similarly long should
+have atleast 32 bits it need not be 8 bytes long. Depending on the platform
+and the processor architecture the ABI(Application Binary Interface) and the
+64bit programming model will define the size of these basic types. Windows x64
+follow what is called as LLP64(meaning only 'long long' and pointer size is 64
+bit wide), So this is what we are sticking to in this article.
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+ Type       &Size       \\
+ \hline               
+ signed char         & 1 bytes \\
+ unsigned char       & 1 bytes \\
+ signed short        & 2 bytes \\
+ unsigned short      & 2 bytes \\
+ signed int          & 4 bytes \\
+ unsigned int        & 4 bytes \\
+ signed long         & 4 bytes \\
+ unsigned long       & 4 bytes \\
+ signed long long    & 8 bytes \\
+ unsigned long long  & 8 bytes
+\end{tabular}
+\end{center}
+
+Also, The specification leaves other aspects of C langauge definition undefined
+and this made room for optimization for the compiler of the choosen platform.
+For example, the result of signed arithemetic leading to overflow/underflow is
+not defined because this predates to the machine architectures when 2's
+complement representation for -ve numbers is not universal, Even though
+virutally every architecture now uses 2's complement representation for -ve
+numbers. Hence result of unsigned overflow/underflow is well defined but not
+signed overflow/underflow!
 
 \section{How signedness is represented in the hardware?}
+Before we understand what are signed and unsigned integers, we need to
+understand weather the processor has this notion of signed and unsigned
+integers concept. Interestingly enough processors do have the concept of
+signed/unsigned but unlike in C language, where this information is baked in to
+the variable type definition, processor registers do not hold this type
+information. After all, registers are just place holders for any kind of
+data. But the instructions themself have the notion of signed/unsigned, That
+is why we have signed 'imul', unsigned 'mul', signed(JL/JG) vs unsigned(JB/JA)
+jump instructions. This is an important distinction between programming
+languages and machine code. It helps in understanding how high level code is get
+translated to underlying machine code. Instructions which produce/consume signed
+data understand that -ve numbers should be in 2's complement form. So if a
+register(8bit) has 11110110 its up to the instruction to treat that data as
+either -10 (signed) or 246 (unsinged). If an operation results in a -ve result
+say -5 then destination register will be written 11111011(2's complement
+representation of -5).
+
+\section{Signed vs Unsigned integers}
+
+
+
+
 
 \section{References}
 \begin{enumerate}[noitemsep]
@@ -34,6 +112,8 @@ to any particular architecure,
 \item \href{http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf}{C99 Standard}
 \item \href{http://blog.robertelder.org/signed-or-unsigned/}{Should I use Signed or Unsigned Ints In C? (Part 1)}
 \item \href{http://blog.robertelder.org/signed-or-unsigned-part-2/}{Should I use Signed or Unsigned Ints In C? (Part 2)}
+\item \href{https://stackoverflow.com/a/42589535/2407966}{Why is imul used for multiplying unsigned numbers?}
+
 \end{enumerate}
 
 \end{document}
