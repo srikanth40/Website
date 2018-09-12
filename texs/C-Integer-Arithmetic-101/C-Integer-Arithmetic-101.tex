@@ -98,10 +98,14 @@ data understand that -ve numbers should be in 2's complement form. So if a
 register(8bit) has 11110110 its up to the instruction to treat that data as
 either -10 (signed) or 246 (unsinged). If an operation results in a -ve result
 say -5 then destination register will be written 11111011(2's complement
-representation of -5).
+representation of -5). 'add' and 'sub' instructions themself are not effected
+by signed and unsigned numbers because of modulo arithmetic.
 
-\section{Signed vs Unsigned integers}
-
+\section{Signed vs Unsigned integers in C}
+Signed numbers are the way -ve numbers are represented and unsigned numbers are
+the way in which +ve numbers are represented. If lets say a data type has 1
+byte of storage then the possible bit representation will be from  0b00000000(0)
+- 0b11111111(255)
 
 
 
