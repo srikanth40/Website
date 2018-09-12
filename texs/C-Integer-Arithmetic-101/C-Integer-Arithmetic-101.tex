@@ -59,7 +59,7 @@ bit wide), So this is what we are sticking to in this article.
 \begin{center}
 \begin{tabular}{|c|c|c|}
  Type       &Size       \\
- \hline               
+ \hline
  signed char         & 1 bytes \\
  unsigned char       & 1 bytes \\
  signed short        & 2 bytes \\
@@ -101,12 +101,131 @@ say -5 then destination register will be written 11111011(2's complement
 representation of -5). 'add' and 'sub' instructions themself are not effected
 by signed and unsigned numbers because of modulo arithmetic.
 
-\section{Signed vs Unsigned integers in C}
+\section{Signed vs Unsigned integers}
 Signed numbers are the way -ve numbers are represented and unsigned numbers are
 the way in which +ve numbers are represented. If lets say a data type has 1
 byte of storage then the possible bit representation will be from  0b00000000(0)
-- 0b11111111(255)
+- 0b11111111(255). Now these 255 valid slots can be interpretted as all positive
+numbers or divide the range in two half and call one half of the slot as
+positive and other as negative numbers. There are many ways in which this
+division can be made but we use 2's complement notation to represent -ve
+numbers. The take away here is if the 255 slots are represented by -ve numbers
+then we will represent from -128 to 127. According to 2's complement notation
+-128 is represented as 0b10000000(0x80) where as 127 is represented as
+0b01111111(0x7F).
 
+<hand draw the picture for number line and interpose positive and negative
+numbers>
+
+<Discuss a bit about how signed flag overflags gets set and how signed and
+unsigned jumps work in asm>
+
+
+\section{Integer Arithmetic Conversion in C}
+C language defines below set of rules to convert the arguments in an expression.
+
+\subsection{Rank}
+Every integer type has an integer conversion rank defined as follows:
+\begin{enumerate}[noitemsep]
+    \item No two signed integer types shall have the same rank, even if they have the same
+    representation.
+    \item The rank of a signed integer type shall be greater than the rank of any signed integer
+    type with less precision.
+    \item The rank of long long int shall be greater than the rank of long int, which
+    shall be greater than the rank of int, which shall be greater than the rank of short
+    int, which shall be greater than the rank of signed char.
+    \item The rank of any unsigned integer type shall equal the rank of the corresponding
+    signed integer type, if any.
+    \item The rank of any standard integer type shall be greater than the rank of any extended
+    integer type with the same width.
+    \item The rank of char shall equal the rank of signed char and unsigned char.
+    \item The rank of \_Bool shall be less than the rank of all other standard integer types.
+    \item The rank of any enumerated type shall equal the rank of the compatible integer type
+    (see 6.7.2.2).
+    \item The rank of any extended signed integer type relative to another extended signed
+    integer type with the same precision is implementation-defined, but still subject to the
+    other rules for determining the integer conversion rank.
+    \item For all integer types T1, T2, and T3, if T1 has greater rank than T2 and T2 has
+    greater rank than T3, then T1 has greater rank than T3.
+\end{enumerate}
+
+\subsection{Integer Promotion}
+    The following may be used in an expression wherever an int or unsigned int may
+    be used:
+    \begin{itemize}[noitemsep]
+        \item An object or expression with an integer type whose integer conversion rank is less
+        than or equal to the rank of int and unsigned int.
+        \item A bit-field of type \_Bool, int, signed int, or unsigned int.
+    \end{itemize}
+\begin{itemize}[noitemsep]
+    \item 1a) If an int can represent all values of the original type, the value is converted to an int;
+    \item 1b) otherwise, it is converted to an unsigned int.
+    These are called the integer promotions. All other types are unchanged by the integer promotions.
+\end{itemize}
+
+\subsection{Usual arithmetic conversions}
+\begin{itemize}[noitemsep]
+    \item 2a) If both operands have the same type, then no further conversion is needed.
+
+    \item 2b) Otherwise, if both operands have signed integer types or both have unsigned
+    integer types, the operand with the type of lesser integer conversion rank is
+    converted to the type of the operand with greater rank.
+
+    \item 2c) Otherwise, if the operand that has unsigned integer type has rank greater or
+    equal to the rank of the type of the other operand, then the operand with
+    signed integer type is converted to the type of the operand with unsigned
+    integer type.
+
+    \item 2d) Otherwise, if the type of the operand with signed integer type can represent
+    all of the values of the type of the operand with unsigned integer type, then
+    the operand with unsigned integer type is converted to the type of the
+    operand with signed integer type.
+
+    \item 2e) Otherwise, both operands are converted to the unsigned integer type
+    corresponding to the type of the operand with signed integer type.
+\end{itemize}
+
+The above rules need some explanation. The gist of 2c is make sense of small -ve
+number with large postive number. If for example a 4 byte signed int is added
+to 8 byte unsigned long long, according to this rule 4 byte signed int will
+become 8 byte unsigned long long. The important point to remember here is
+converion of signed int to unsigned long long, The way the compiler does this
+sign extend 4 byte signed number so that its absolute value will not change
+i.e.., -10 remain -10 whether it is a 4 byte or 8 byte. But according to these
+rules the expression will have the type unsigned long long so statments like
+below will result in unexpected behaviour. Since the var1+var2 is an unsigned
+expression the compiler will enforce it by using a unsigned jump instruction
+called jae instead of jge instruction.
+
+
+
+
+
+
+\begin{minted}{c}
+signed int var1 = -100;
+unsigned long long var2 = 10;
+if (var1 + var2 < 0) { //resulting unsigned long long expression will never be lessthan 0
+    printf("This will never get printed");
+}
+\end{minted}
+\begin{minted}{asm}
+$LN4:
+        sub     rsp, 56                             ; 00000038H
+        mov     DWORD PTR var1$[rsp], -100                ; ffffffffffffff9cH
+        mov     QWORD PTR var2$[rsp], 10
+        movsxd  rax, DWORD PTR var1$[rsp]
+        add     rax, QWORD PTR var2$[rsp]
+        test    rax, rax
+        jae     SHORT $LN2@main             --> jae is an unsigned jump for above or equal
+        lea     rcx, OFFSET FLAT:$SG4416
+        call    printf
+$LN2@main:
+        xor     eax, eax
+        add     rsp, 56                             ; 00000038H
+        ret     0
+main    ENDP
+\end{minted}
 
 
 
@@ -116,6 +235,7 @@ byte of storage then the possible bit representation will be from  0b00000000(0)
 \item \href{http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf}{C99 Standard}
 \item \href{http://blog.robertelder.org/signed-or-unsigned/}{Should I use Signed or Unsigned Ints In C? (Part 1)}
 \item \href{http://blog.robertelder.org/signed-or-unsigned-part-2/}{Should I use Signed or Unsigned Ints In C? (Part 2)}
+\item \href{http://ref.x86asm.net/coder-abc.html}{X86 Opcode and Instruction Reference}
 \item \href{https://stackoverflow.com/a/42589535/2407966}{Why is imul used for multiplying unsigned numbers?}
 
 \end{enumerate}
