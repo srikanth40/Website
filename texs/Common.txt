@@ -49,3 +49,14 @@ Tables:
 Symbols
 < \textless 
 > \textgreater
+
+Create bold text inside minted block:
+content should be escaped between ||	
+\begin{minted}[escapeinside=||]{text}
+var1-var2 => -135 => |\bf{which cannot be represented in a byte meaning the sign
+bit of the byte will not be set but the overflow bit gets set. So SF=0 and
+OF=1}|
+
+but because it is still under the range of singed numbers representable in a
+byte OF = 0
+\end{minted}
