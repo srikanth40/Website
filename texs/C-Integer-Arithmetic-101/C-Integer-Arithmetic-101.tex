@@ -6,7 +6,7 @@
 \begin{titlepage}
    \vspace*{\stretch{1.0}}
    \begin{center}
-      \Large\textsc{C Unsigned/Signed Integer Arithmetic 101}\\
+      \Large\textsc{C Signed/Unsigned Integer Arithmetic 101}\\
       \vspace{5mm}
       \Large\textit{Vineel Kovvuri}\\
       \url{http://vineelkovvuri.com}\\
@@ -48,13 +48,14 @@ standard integer types.
 
 One of the interesting fact about C language specification is, the sizes of
 these integer types is not defined at all. It only defines the minimum supported
-length. For example, int need not be 8 bytes long on x64 platforms, the only
+size. For example, int need not be 8 bytes long on x64 platforms, the only
 definition for int is it should have atleast 16 bits and similarly long should
 have atleast 32 bits it need not be 8 bytes long. Depending on the platform
 and the processor architecture the ABI(Application Binary Interface) and the
 64bit programming model will define the size of these basic types. Windows x64
 follow what is called as LLP64(meaning only 'long long' and pointer size is 64
-bit wide), So this is what we are sticking to in this article.
+bit wide), So below are the sizes of the standard types that we are sticking to
+in this article.
 
 \begin{center}
 \begin{tabular}{|c|c|c|}
@@ -73,40 +74,41 @@ bit wide), So this is what we are sticking to in this article.
 \end{tabular}
 \end{center}
 
-Also, The specification leaves other aspects of C langauge definition undefined
-and this made room for optimization for the compiler of the choosen platform.
-For example, the result of signed arithemetic leading to overflow/underflow is
-not defined because this predates to the machine architectures when 2's
-complement representation for -ve numbers is not universal, Even though
-virutally every architecture now uses 2's complement representation for -ve
+Also, The specification leaves other aspects of C language definition undefined
+and this made room for optimization for the compilers.
+For example, the result of signed arithmetic leading to overflow/underflow is
+not defined because the specification predates to the machine architectures when
+2's complement representation for -ve numbers is not universal, Even though
+virtually every architecture now uses 2's complement representation for -ve
 numbers. Hence result of unsigned overflow/underflow is well defined but not
 signed overflow/underflow!
 
-\section{How signedness is represented in the hardware?}
-Before we understand what are signed and unsigned integers, we need to
+\section{How signed-ness is represented in the hardware?}
+Before we understand how are signed and unsigned integers represented in C
+language, we need to
 understand weather the processor has this notion of signed and unsigned
-integers concept. Interestingly enough processors do have the concept of
+integer concept. Interestingly enough processors do have the concept of
 signed/unsigned but unlike in C language, where this information is baked in to
 the variable type definition, processor registers do not hold this type
 information. After all, registers are just place holders for any kind of
-data. But the instructions themself have the notion of signed/unsigned, That
+data. But the instructions them self have the notion of signed/unsigned, That
 is why we have signed 'imul', unsigned 'mul', signed(JL/JG) vs unsigned(JB/JA)
 jump instructions. This is an important distinction between programming
-languages and machine code. It helps in understanding how high level code is get
+languages and machine code. It helps in understanding how high level code gets
 translated to underlying machine code. Instructions which produce/consume signed
 data understand that -ve numbers should be in 2's complement form. So if a
 register(8bit) has 11110110 its up to the instruction to treat that data as
-either -10 (signed) or 246 (unsinged). If an operation results in a -ve result
+either -10 (signed) or 246 (unsigned). If an operation results in a -ve result
 say -5 then destination register will be written 11111011(2's complement
-representation of -5). 'add' and 'sub' instructions themself are not effected
+representation of -5). 'add' and 'sub' instructions them self are not effected
 by signed and unsigned numbers because of modulo arithmetic.
 
 \section{Signed vs Unsigned integers}
 Signed numbers are the way -ve numbers are represented and unsigned numbers are
 the way in which +ve numbers are represented. If lets say a data type has 1
 byte of storage then the possible bit representation will be from  0b00000000(0)
-- 0b11111111(255). Now these 255 valid slots can be interpretted as all positive
-numbers or divide the range in two half and call one half of the slot as
+- 0b11111111(255). Now these 255 valid slots can be interpreted as all positive
+numbers or divide the range in two halves and call one half of the slot as
 positive and other as negative numbers. There are many ways in which this
 division can be made but we use 2's complement notation to represent -ve
 numbers. The take away here is if the 255 slots are represented by -ve numbers
@@ -117,7 +119,7 @@ then we will represent from -128 to 127. According to 2's complement notation
 <hand draw the picture for number line and interpose positive and negative
 numbers>
 
-<Discuss a bit about how signed flag overflags gets set and how signed and
+<Discuss a bit about how signed flag over flag gets set and how signed and
 unsigned jumps work in asm>
 
 
@@ -186,15 +188,15 @@ Every integer type has an integer conversion rank defined as follows:
 \end{itemize}
 
 The above rules need some explanation. The gist of 2c is make sense of small -ve
-number with large postive number. If for example a 4 byte signed int is added
+number with large positive number. If for example a 4 byte signed int is added
 to 8 byte unsigned long long, according to this rule 4 byte signed int will
 become 8 byte unsigned long long. The important point to remember here is
-converion of signed int to unsigned long long, The way the compiler does this
+conversion of signed int to unsigned long long, The way the compiler does this
  is by sign extend 4 byte signed number so that its absolute value will not
  change
 i.e.., -10 remain -10 whether it is a 4 byte or 8 byte. But according to these
-rules the expression will have the type unsigned long long so statments like
-below will result in unexpected behaviour. Since the var1+var2 is an unsigned
+rules the expression will have the type unsigned long long so statements like
+below will result in unexpected behavior. Since the var1+var2 is an unsigned
 expression the compiler will enforce it by using a unsigned jump instruction
 called jae instead of jge instruction.
 
@@ -202,8 +204,13 @@ Whenever a signed data type has to be converted to unsigned data type the
 absolute value remains unchanged because of sign extension will be done using
 movsx instruction. So if a variable is type signed short with value -10, when
 this variable is sign extended to unsigned int the value of even after the
-conversion remains -10 when interpretted as singed int because the binary
-represent for -10 for 2 byte storage and 4 byte storage yeilds the same.
+conversion remains -10 when interpreted as singed int because the binary
+represent for -10 for 2 byte storage and 4 byte storage yields the same.
+
+\href{https://godbolt.org/}{godbolt's compiler explorer} is very helpful in
+understanding how the compiler translate expressions and apply the above rules.
+Clang AST view especially helps in graphically looking at how these
+promotions/conversion happen
 
 \begin{minted}{c}
 signed int var1 = -100;
@@ -229,11 +236,25 @@ $LN2@main:
         ret     0
 main    ENDP
 \end{minted}
+\begin{minted}{llvm}
+Fragment of clang's AST for above program
+
+      |-BinaryOperator <line:7:9, col:23> 'bool' '<'
+      | |-BinaryOperator <col:9, col:16> 'unsigned long long' '+'
+      | | |-ImplicitCastExpr <col:9> 'unsigned long long' <IntegralCast>
+      | | | `-ImplicitCastExpr <col:9> 'int' <LValueToRValue>
+      | | |   `-DeclRefExpr <col:9> 'int' lvalue Var 0x55ea65e030e0 'var1' 'int'
+      | | `-ImplicitCastExpr <col:16> 'unsigned long long' <LValueToRValue>
+      | |   `-DeclRefExpr <col:16> 'unsigned long long' lvalue Var 0x55ea65e031b0 'var2' 'unsigned long long'
+      | `-ImplicitCastExpr <col:23> 'unsigned long long' <IntegralCast>
+      |   `-IntegerLiteral <col:23> 'int' 0
+\end{minted}
+
 
 These rules can only dictate what need to be done for each expression in a
-statement one at a time.  it cannot not determine the type of the compelte
+statement one at a time.  it cannot not determine the type of the complete
 statement at once because of this we might end up with unexpected results if
-we are not careful enough about how the type is propogating.
+we are not careful enough about how the type is propagating.
 for example,in var = exp1 + exp2*exp3 the rules can only tell how exp2*exp3
 interact and how that result interact with exp1. exp2*exp3's new type may not
 gel well with exp1 and might result in unexpected result.
@@ -242,7 +263,7 @@ Similarly, Rule 2d, tries to make sense when you have two variables with small
 unsigned number and signed number are present in an expression and the
 singed storage can actually hold the unsigned number entirely, then by this
 rule, the unsigned number gets converted to signed number.
-For example: 
+For example:
 \begin{minted}{c}
 unsigned int var1 = 100;
 signed long long var2 = -10;
@@ -266,6 +287,20 @@ $LN2@main:
         ret     0
 main    ENDP
 \end{minted}
+\begin{minted}{llvm}
+Fragment of clang's AST for above program
+
+      |-BinaryOperator <line:7:9, col:23> 'bool' '<'
+      | |-BinaryOperator <col:9, col:16> 'long long' '+'
+      | | |-ImplicitCastExpr <col:9> 'long long' <IntegralCast>
+      | | | `-ImplicitCastExpr <col:9> 'unsigned int' <LValueToRValue>
+      | | |   `-DeclRefExpr <col:9> 'unsigned int' lvalue Var 0x56305e1200e0 'var1' 'unsigned int'
+      | | `-ImplicitCastExpr <col:16> 'long long' <LValueToRValue>
+      | |   `-DeclRefExpr <col:16> 'long long' lvalue Var 0x56305e1201a8 'var2' 'long long'
+      | `-ImplicitCastExpr <col:23> 'long long' <IntegralCast>
+      |   `-IntegerLiteral <col:23> 'int' 0
+\end{minted}
+
 
 And finally, Rule 2e is applied only between unsigned int and signed long
 because neither 2c,2d fits these type on LLP64 model. One interesting thing we
@@ -298,7 +333,35 @@ $LN2@main:
         ret     0
 main    ENDP
 \end{minted}
+\begin{minted}{llvm}
+Fragment of clang's AST for above program
 
+      |-BinaryOperator <line:7:9, col:23> 'bool' '<'
+      | |-BinaryOperator <col:9, col:16> 'long' '+'
+      | | |-ImplicitCastExpr <col:9> 'long' <IntegralCast>
+      | | | `-ImplicitCastExpr <col:9> 'unsigned int' <LValueToRValue>
+      | | |   `-DeclRefExpr <col:9> 'unsigned int' lvalue Var 0x564cedbd0100 'var1' 'unsigned int'
+      | | `-ImplicitCastExpr <col:16> 'long' <LValueToRValue>
+      | |   `-DeclRefExpr <col:16> 'long' lvalue Var 0x564cedbd01c8 'var2' 'long'
+      | `-ImplicitCastExpr <col:23> 'long' <IntegralCast>
+      |   `-IntegerLiteral <col:23> 'int' 0
+\end{minted}
+
+Below table summaries the rules applied for each expression combination
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Integer-Arithmetic-All-Datatypes.png}
+\caption{Rules applied for each combination of expression}
+\end{figure}
+
+Below table summaries the resulting data type of the expression
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Resulting-Datatypes.png}
+\caption{Resulting type of the expression}
+\end{figure}
+
+Note: Above table is for LLP64 programming model used under Windows x64
 
 \section{References}
 \begin{enumerate}[noitemsep]
