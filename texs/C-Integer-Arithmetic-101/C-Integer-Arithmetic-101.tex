@@ -190,17 +190,20 @@ number with large postive number. If for example a 4 byte signed int is added
 to 8 byte unsigned long long, according to this rule 4 byte signed int will
 become 8 byte unsigned long long. The important point to remember here is
 converion of signed int to unsigned long long, The way the compiler does this
-sign extend 4 byte signed number so that its absolute value will not change
+ is by sign extend 4 byte signed number so that its absolute value will not
+ change
 i.e.., -10 remain -10 whether it is a 4 byte or 8 byte. But according to these
 rules the expression will have the type unsigned long long so statments like
 below will result in unexpected behaviour. Since the var1+var2 is an unsigned
 expression the compiler will enforce it by using a unsigned jump instruction
 called jae instead of jge instruction.
 
-
-
-
-
+Whenever a signed data type has to be converted to unsigned data type the
+absolute value remains unchanged because of sign extension will be done using
+movsx instruction. So if a variable is type signed short with value -10, when
+this variable is sign extended to unsigned int the value of even after the
+conversion remains -10 when interpretted as singed int because the binary
+represent for -10 for 2 byte storage and 4 byte storage yeilds the same.
 
 \begin{minted}{c}
 signed int var1 = -100;
@@ -227,6 +230,74 @@ $LN2@main:
 main    ENDP
 \end{minted}
 
+These rules can only dictate what need to be done for each expression in a
+statement one at a time.  it cannot not determine the type of the compelte
+statement at once because of this we might end up with unexpected results if
+we are not careful enough about how the type is propogating.
+for example,in var = exp1 + exp2*exp3 the rules can only tell how exp2*exp3
+interact and how that result interact with exp1. exp2*exp3's new type may not
+gel well with exp1 and might result in unexpected result.
+
+Similarly, Rule 2d, tries to make sense when you have two variables with small
+unsigned number and signed number are present in an expression and the
+singed storage can actually hold the unsigned number entirely, then by this
+rule, the unsigned number gets converted to signed number.
+For example: 
+\begin{minted}{c}
+unsigned int var1 = 100;
+signed long long var2 = -10;
+if (var1 + var2 < 0) { //resulting in signed long long expression
+    printf("This gets printed if var1 + var2 is < 0");
+}
+\end{minted}
+\begin{minted}{asm}
+        sub     rsp, 56                             ; 00000038H
+        mov     DWORD PTR var1$[rsp], 100   ; 00000064H
+        mov     QWORD PTR var2$[rsp], -10
+        mov     eax, DWORD PTR var1$[rsp]
+        add     rax, QWORD PTR var2$[rsp]
+        test    rax, rax
+        jge     SHORT $LN2@main
+        lea     rcx, OFFSET FLAT:$SG4869
+        call    printf
+$LN2@main:
+        xor     eax, eax
+        add     rsp, 56                             ; 00000038H
+        ret     0
+main    ENDP
+\end{minted}
+
+And finally, Rule 2e is applied only between unsigned int and signed long
+because neither 2c,2d fits these type on LLP64 model. One interesting thing we
+can observe if read between the lines is, the resultant type has unsignedness
+but the type is of signed variable and also both operand types are converted
+unlike other rules.
+For example:
+\begin{minted}{c}
+unsigned int var1 = 100; // this gets converted to unsigned long
+signed long var2 = -10;  // this will also converted to unsigned long
+if (var1 + var2 < 0) { //resulting type is unsigned long
+    printf("This will not be printed");
+}
+\end{minted}
+\begin{minted}{asm}
+        sub     rsp, 56                             ; 00000038H
+        mov     DWORD PTR var1$[rsp], 100   ; 00000064H
+        mov     DWORD PTR var2$[rsp], -10
+        mov     eax, DWORD PTR var2$[rsp]
+        mov     ecx, DWORD PTR var1$[rsp]
+        add     ecx, eax
+        mov     eax, ecx
+        test    eax, eax
+        jae     SHORT $LN2@main
+        lea     rcx, OFFSET FLAT:$SG4869
+        call    printf
+$LN2@main:
+        xor     eax, eax
+        add     rsp, 56                             ; 00000038H
+        ret     0
+main    ENDP
+\end{minted}
 
 
 \section{References}
