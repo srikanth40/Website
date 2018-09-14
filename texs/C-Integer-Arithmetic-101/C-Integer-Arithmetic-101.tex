@@ -29,33 +29,16 @@ an expression \textless expr1\textgreater \textless op\textgreater
 \textless expr2\textgreater  when expr1 and expr2 are different types, we
 want the resulting expression from this to have one type.
 
-Before going any further into the details of the arithmetic conversions. Let's
-look at few basic concepts. The C99 specification refers to below types as
-standard integer types.
-
-\begin{enumerate}[noitemsep]
-    \item signed char
-    \item unsigned char
-    \item signed short
-    \item unsigned short
-    \item signed int
-    \item unsigned int
-    \item signed long
-    \item unsigned long
-    \item signed long long
-    \item unsigned long long
-\end{enumerate}
-
-One of the interesting fact about C language specification is, the sizes of
-these integer types is not defined at all. It only defines the minimum supported
-size. For example, int need not be 8 bytes long on x64 platforms, the only
-definition for int is it should have at least 16 bits and similarly long should
-have at least 32 bits it need not be 8 bytes long. Depending on the platform
-and the processor architecture the ABI(Application Binary Interface) and the
-64bit programming model will define the size of these basic types. Windows x64
-follows LLP64(meaning only 'long long' and pointer size is 64
-bit wide), So below are the sizes of the standard types that we are sticking to
-in this article.
+The C99 specification below set of integer types called 'standard integer
+types'. Interestingly, the sizes of these integer types is not defined at all.
+It only defines the minimum supported size. For example, int need not be 8 bytes
+long on x64 platforms, the only definition for int is it should have at least 16
+bits and similarly long should have at least 32 bits it need not be 8 bytes
+long. Depending on the platform and the processor architecture the ABI
+(Application Binary Interface) and the 64bit programming model will define the
+size of these basic types. Windows x64 follows LLP64(meaning only 'long long'
+and pointer size is 64 bit wide), So below are the sizes of the standard types
+that we are sticking to in this article.
 
 \begin{center}
 \begin{tabular}{|c|c|c|}
@@ -84,277 +67,23 @@ numbers. Hence the result of unsigned overflow/underflow is well defined but not
 signed overflow/underflow!
 
 \section{How signed-ness is represented in the hardware?}
-Before we understand how are signed and unsigned integers represented in C
-language, we need to understand whether the processor has this notion of signed
-and unsigned integer concept. Interestingly enough processors do have the
-concept of signed/unsigned, but unlike in C language, where this information is
-baked in to the variable type definition, processor registers do not hold this
-type information. After all, registers are just placeholders for any data. But
-the instructions themselves have the notion of signed/unsigned, That is why we
-have signed 'imul', unsigned 'mul', signed(JL/JG) vs unsigned(JB/JA) jump
-instructions. This is an important distinction between programming languages and
-machine code. It helps in understanding how high level code gets translated to
-underlying machine code. Instructions which produce/consume signed data
-understand that -ve numbers should be in 2's complement form. So if a register
-(8bit) has 11110110 it's up to the instruction to treat that data as either -10 
-(signed) or 246 (unsigned). If an operation results in a -ve result say -5 then
-destination register will be written 11111011(2's complement representation of -5).
-'add' and 'sub' instructions themselves are not affected by signed and unsigned
-numbers because of modulo arithmetic.
+Processors do have the concept of signed/unsigned, but unlike in C language,
+where this information is baked in to the variable type definition, processor
+registers do not hold this type information. After all, registers are just
+placeholders data. But the instructions themselves have the notion of
+signed/unsigned, That is why we have signed 'imul', unsigned 'mul', signed
+(JL/JG) vs unsigned(JB/JA) jump instructions. This is an important distinction
+between programming languages and machine code. It helps in understanding how
+high level code gets translated to underlying machine code. Instructions which
+produce/consume signed data understand that -ve numbers should be in 2's
+complement form. So if a register (8bit) has 11110110 it's up to the instruction
+to treat that data as either -10 (signed) or 246 (unsigned). If an operation
+results in a -ve result say -5 then destination register will be written
+11111011(2's complement representation of -5). 'add' and 'sub' instructions
+themselves are not affected by signed and unsigned numbers because of modulo
+arithmetic.
 
-\section{Signed vs Unsigned integers}
-Signed numbers are the way -ve numbers are represented and unsigned numbers are
-the way in which +ve numbers are represented. If let's say a data type has 1
-byte of storage then the possible bit representation will be from  0b00000000(0)
-- 0b11111111(255). Now, these 255 valid slots can be interpreted as all positive
-numbers or divide the range into two halves and call one half of the slot as
-positive and other as negative numbers. There are many ways in which this
-division can be made but we use 2's complement notation to represent -ve
-numbers. The take away here is if the 255 slots are represented by -ve numbers
-then we will represent from -128 to 127. According to 2's complement notation
--128 is represented as 0b10000000(0x80) whereas 127 is represented as
-0b01111111(0x7F).
-
-\section{Integer Arithmetic Conversion in C}
-C language defines below set of rules to convert the arguments in an expression.
-
-\subsection{Rank}
-Every integer type has an integer conversion rank defined as follows:
-\begin{enumerate}[noitemsep]
-    \item No two signed integer types shall have the same rank, even if they have the same representation.
-    \item The rank of a signed integer type shall be greater than the rank of any signed integer
-    type with less precision.
-    \item The rank of long long int shall be greater than the rank of long int, which
-    shall be greater than the rank of int, which shall be greater than the rank of short
-    int, which shall be greater than the rank of signed char.
-    \item The rank of any unsigned integer type shall equal the rank of the corresponding
-    signed integer type, if any.
-    \item The rank of any standard integer type shall be greater than the rank of any extended
-    integer type with the same width.
-    \item The rank of char shall equal the rank of signed char and unsigned char.
-    \item The rank of \_Bool shall be less than the rank of all other standard integer types.
-    \item The rank of any enumerated type shall equal the rank of the compatible integer type
-    (see 6.7.2.2).
-    \item The rank of any extended signed integer type relative to another extended signed
-    integer type with the same precision is implementation-defined, but still subject to the
-    other rules for determining the integer conversion rank.
-    \item For all integer types T1, T2, and T3, if T1 has greater rank than T2 and T2 has
-    greater rank than T3, then T1 has greater rank than T3.
-\end{enumerate}
-
-\subsection{Integer Promotion}
-    The following may be used in an expression wherever an int or unsigned int may
-    be used:
-    \begin{itemize}[noitemsep]
-        \item An object or expression with an integer type whose integer conversion rank is less
-        than or equal to the rank of int and unsigned int.
-        \item A bit-field of type \_Bool, int, signed int, or unsigned int.
-    \end{itemize}
-\begin{itemize}[noitemsep]
-    \item 1a) If an int can represent all values of the original type, the value is converted to an int;
-    \item 1b) otherwise, it is converted to an unsigned int.
-    These are called the integer promotions. All other types are unchanged by the integer promotions.
-\end{itemize}
-
-\subsection{Usual arithmetic conversions}
-\begin{itemize}[noitemsep]
-    \item 2a) If both operands have the same type, then no further conversion is needed.
-
-    \item 2b) Otherwise, if both operands have signed integer types or both have unsigned
-    integer types, the operand with the type of lesser integer conversion rank is
-    converted to the type of the operand with greater rank.
-
-    \item 2c) Otherwise, if the operand that has unsigned integer type has rank greater or
-    equal to the rank of the type of the other operand, then the operand with
-    signed integer type is converted to the type of the operand with unsigned
-    integer type.
-
-    \item 2d) Otherwise, if the type of the operand with signed integer type can represent
-    all of the values of the type of the operand with unsigned integer type, then
-    the operand with unsigned integer type is converted to the type of the
-    operand with signed integer type.
-
-    \item 2e) Otherwise, both operands are converted to the unsigned integer type
-    corresponding to the type of the operand with signed integer type.
-\end{itemize}
-
-The above rules need some explanation. The gist of 2c is make sense of small -ve
-number with large positive number. If for example a 4 byte signed int is added
-to 8 byte unsigned long long, according to this rule 4 byte signed int will
-become 8 byte unsigned long long. The important point to remember here is
-conversion of signed int to unsigned long long, The way the compiler does this
- is by sign extend 4 byte signed number so that its absolute value will not
- change
-i.e.., -10 remain -10 whether it is a 4 byte or 8 byte. But according to these
-rules the expression will have the type unsigned long long so statements like
-below will result in unexpected behavior. Since the var1+var2 is an unsigned
-expression the compiler will enforce it by using a unsigned jump instruction
-called jae instead of jge instruction.
-
-Whenever a signed data type has to be converted to unsigned data type the
-absolute value remains unchanged because of sign extension will be done using
-movsx instruction. So if a variable is type signed short with value -10, when
-this variable is sign extended to unsigned int the value of even after the
-conversion remains -10 when interpreted as singed int because the binary
-represent for -10 for 2 byte storage and 4 byte storage yields the same.
-
-\href{https://godbolt.org/}{godbolt's compiler explorer} is very helpful in
-understanding how the compiler translate expressions and apply the above rules.
-Clang AST view especially helps in graphically looking at how these
-promotions/conversion happen
-
-\begin{minted}{c}
-signed int var1 = -100;
-unsigned long long var2 = 10;
-if (var1 + var2 < 0) { //resulting unsigned long long expression will never be lessthan 0
-    printf("This will never get printed");
-}
-\end{minted}
-\begin{minted}{asm}
-$LN4:
-        sub     rsp, 56                             ; 00000038H
-        mov     DWORD PTR var1$[rsp], -100                ; ffffffffffffff9cH
-        mov     QWORD PTR var2$[rsp], 10
-        movsxd  rax, DWORD PTR var1$[rsp]
-        add     rax, QWORD PTR var2$[rsp]
-        test    rax, rax
-        jae     SHORT $LN2@main             --> jae is an unsigned jump for above or equal
-        lea     rcx, OFFSET FLAT:$SG4416
-        call    printf
-$LN2@main:
-        xor     eax, eax
-        add     rsp, 56                             ; 00000038H
-        ret     0
-main    ENDP
-\end{minted}
-\begin{minted}{text}
-Fragment of clang's AST for above program
-
-      |-BinaryOperator <line:7:9, col:23> 'bool' '<'
-      | |-BinaryOperator <col:9, col:16> 'unsigned long long' '+'
-      | | |-ImplicitCastExpr <col:9> 'unsigned long long' <IntegralCast>
-      | | | `-ImplicitCastExpr <col:9> 'int' <LValueToRValue>
-      | | |   `-DeclRefExpr <col:9> 'int' lvalue Var 0x55ea65e030e0 'var1' 'int'
-      | | `-ImplicitCastExpr <col:16> 'unsigned long long' <LValueToRValue>
-      | |   `-DeclRefExpr <col:16> 'unsigned long long' lvalue Var 0x55ea65e031b0 'var2' 'unsigned long long'
-      | `-ImplicitCastExpr <col:23> 'unsigned long long' <IntegralCast>
-      |   `-IntegerLiteral <col:23> 'int' 0
-\end{minted}
-
-
-These rules can only dictate what need to be done for each expression in a
-statement one at a time.  it cannot not determine the type of the complete
-statement at once because of this we might end up with unexpected results if
-we are not careful enough about how the type is propagating.
-for example,in var = exp1 + exp2*exp3 the rules can only tell how exp2*exp3
-interact and how that result interact with exp1. exp2*exp3's new type may not
-gel well with exp1 and might result in unexpected result.
-
-Similarly, Rule 2d, tries to make sense when you have two variables with small
-unsigned number and signed number are present in an expression and the
-singed storage can actually hold the unsigned number entirely, then by this
-rule, the unsigned number gets converted to signed number.
-For example:
-\begin{minted}{c}
-unsigned int var1 = 100;
-signed long long var2 = -10;
-if (var1 + var2 < 0) { //resulting in signed long long expression
-    printf("This gets printed if var1 + var2 is < 0");
-}
-\end{minted}
-\begin{minted}{asm}
-        sub     rsp, 56                             ; 00000038H
-        mov     DWORD PTR var1$[rsp], 100   ; 00000064H
-        mov     QWORD PTR var2$[rsp], -10
-        mov     eax, DWORD PTR var1$[rsp]
-        add     rax, QWORD PTR var2$[rsp]
-        test    rax, rax
-        jge     SHORT $LN2@main
-        lea     rcx, OFFSET FLAT:$SG4869
-        call    printf
-$LN2@main:
-        xor     eax, eax
-        add     rsp, 56                             ; 00000038H
-        ret     0
-main    ENDP
-\end{minted}
-\begin{minted}{text}
-Fragment of clang's AST for above program
-
-      |-BinaryOperator <line:7:9, col:23> 'bool' '<'
-      | |-BinaryOperator <col:9, col:16> 'long long' '+'
-      | | |-ImplicitCastExpr <col:9> 'long long' <IntegralCast>
-      | | | `-ImplicitCastExpr <col:9> 'unsigned int' <LValueToRValue>
-      | | |   `-DeclRefExpr <col:9> 'unsigned int' lvalue Var 0x56305e1200e0 'var1' 'unsigned int'
-      | | `-ImplicitCastExpr <col:16> 'long long' <LValueToRValue>
-      | |   `-DeclRefExpr <col:16> 'long long' lvalue Var 0x56305e1201a8 'var2' 'long long'
-      | `-ImplicitCastExpr <col:23> 'long long' <IntegralCast>
-      |   `-IntegerLiteral <col:23> 'int' 0
-\end{minted}
-
-
-And finally, Rule 2e is applied only between unsigned int and signed long
-because neither 2c,2d fits these type on LLP64 model. One interesting thing we
-can observe if read between the lines is, the resultant type has unsignedness
-but the type is of signed variable and also both operand types are converted
-unlike other rules.
-For example:
-\begin{minted}{c}
-unsigned int var1 = 100; // this gets converted to unsigned long
-signed long var2 = -10;  // this will also converted to unsigned long
-if (var1 + var2 < 0) { //resulting type is unsigned long
-    printf("This will not be printed");
-}
-\end{minted}
-\begin{minted}{asm}
-        sub     rsp, 56                             ; 00000038H
-        mov     DWORD PTR var1$[rsp], 100   ; 00000064H
-        mov     DWORD PTR var2$[rsp], -10
-        mov     eax, DWORD PTR var2$[rsp]
-        mov     ecx, DWORD PTR var1$[rsp]
-        add     ecx, eax
-        mov     eax, ecx
-        test    eax, eax
-        jae     SHORT $LN2@main
-        lea     rcx, OFFSET FLAT:$SG4869
-        call    printf
-$LN2@main:
-        xor     eax, eax
-        add     rsp, 56                             ; 00000038H
-        ret     0
-main    ENDP
-\end{minted}
-\begin{minted}{text}
-Fragment of clang's AST for above program
-
-      |-BinaryOperator <line:7:9, col:23> 'bool' '<'
-      | |-BinaryOperator <col:9, col:16> 'long' '+'
-      | | |-ImplicitCastExpr <col:9> 'long' <IntegralCast>
-      | | | `-ImplicitCastExpr <col:9> 'unsigned int' <LValueToRValue>
-      | | |   `-DeclRefExpr <col:9> 'unsigned int' lvalue Var 0x564cedbd0100 'var1' 'unsigned int'
-      | | `-ImplicitCastExpr <col:16> 'long' <LValueToRValue>
-      | |   `-DeclRefExpr <col:16> 'long' lvalue Var 0x564cedbd01c8 'var2' 'long'
-      | `-ImplicitCastExpr <col:23> 'long' <IntegralCast>
-      |   `-IntegerLiteral <col:23> 'int' 0
-\end{minted}
-
-Below table summaries the rules applied for each expression combination
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{Integer-Arithmetic-All-Datatypes.png}
-\caption{Rules applied for each combination of expression}
-\end{figure}
-
-Below table summaries the resulting data type of the expression
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{Resulting-Datatypes.png}
-\caption{Resulting type of the expression}
-\end{figure}
-
-Note: Above table is for LLP64 programming model used under Windows x64
-
-\section{How signed and unsigned operations are differentiated in assembly?}
+\section{How signed-ness is interpreted in assembly?}
 In one of the above paragraphs, we said, processor registers does not hold any
 signed/unsigned type information with them and its up to the instructions to
 interpret the data as either signed or unsigned. But the interesting thing
@@ -439,6 +168,278 @@ byte OF = 0}|
 \end{minted}
 That is why jl is defined as SF != OF, When this is true it means var1 < var2
 even if var1 and var2 are signed(meaning -ve numbers)
+
+\section{Signed vs Unsigned integers in C}
+Signed numbers are the way -ve numbers are represented and unsigned numbers are
+the way in which +ve numbers are represented. If let's say a data type has 1
+byte of storage then the possible bit representation will be from  0b00000000(0)
+- 0b11111111(255). Now, these 255 valid slots can be interpreted as all positive
+numbers or divide the range into two halves and call one half of the slot as
+positive and other as negative numbers. There are other alternate representation
+for -ve number but almost all systems use 2's complement notation to represent
+-ve numbers. The take away here is if we include -ve number in the 255 slots
+then we will represent from -128 to 127. According to 2's complement notation
+-128 is represented as 0b10000000(0x80) whereas 127 is represented as 0b01111111
+(0x7F).
+
+\section{Integer Arithmetic Conversion in C}
+C language defines below set of rules to convert the arguments in an expression.
+
+\subsection{Rank}
+Every integer type has an integer conversion rank defined as follows:
+\begin{enumerate}[noitemsep]
+    \item No two signed integer types shall have the same rank, even if they have the same representation.
+    \item The rank of a signed integer type shall be greater than the rank of any signed integer
+    type with less precision.
+    \item The rank of long long int shall be greater than the rank of long int, which
+    shall be greater than the rank of int, which shall be greater than the rank of short
+    int, which shall be greater than the rank of signed char.
+    \item The rank of any unsigned integer type shall equal the rank of the corresponding
+    signed integer type, if any.
+    \item The rank of any standard integer type shall be greater than the rank of any extended
+    integer type with the same width.
+    \item The rank of char shall equal the rank of signed char and unsigned char.
+    \item The rank of \_Bool shall be less than the rank of all other standard integer types.
+    \item The rank of any enumerated type shall equal the rank of the compatible integer type
+    (see 6.7.2.2).
+    \item The rank of any extended signed integer type relative to another extended signed
+    integer type with the same precision is implementation-defined, but still subject to the
+    other rules for determining the integer conversion rank.
+    \item For all integer types T1, T2, and T3, if T1 has greater rank than T2 and T2 has
+    greater rank than T3, then T1 has greater rank than T3.
+\end{enumerate}
+At a high level the gist of above rules is as follows
+\begin{minted}{text}
+ Rank(signed char) ==  Rank(unsigned char) <  Rank(signed short) ==  Rank(unsigned short) <  Rank(signed int) ==  Rank(unsigned int) <  Rank(signed long) ==  Rank(unsigned long) <  Rank(signed long long) ==  Rank(unsigned long long)
+\end{minted}
+
+\subsection{Integer Promotion}
+    The following may be used in an expression wherever an int or unsigned int may
+    be used:
+    \begin{itemize}[noitemsep]
+        \item An object or expression with an integer type whose integer conversion rank is less
+        than or equal to the rank of int and unsigned int.
+        \item A bit-field of type \_Bool, int, signed int, or unsigned int.
+    \end{itemize}
+\begin{itemize}[noitemsep]
+    \item 1a) If an int can represent all values of the original type, the value is converted to an int;
+    \item 1b) otherwise, it is converted to an unsigned int.
+    These are called the integer promotions. All other types are unchanged by the integer promotions.
+\end{itemize}
+
+\subsection{Usual arithmetic conversions}
+\begin{itemize}[noitemsep]
+    \item 2a) If both operands have the same type, then no further conversion is needed.
+
+    \item 2b) Otherwise, if both operands have signed integer types or both have unsigned
+    integer types, the operand with the type of lesser integer conversion rank is
+    converted to the type of the operand with greater rank.
+
+    \item 2c) Otherwise, if the operand that has unsigned integer type has rank greater or
+    equal to the rank of the type of the other operand, then the operand with
+    signed integer type is converted to the type of the operand with unsigned
+    integer type.
+
+    \item 2d) Otherwise, if the type of the operand with signed integer type can represent
+    all of the values of the type of the operand with unsigned integer type, then
+    the operand with unsigned integer type is converted to the type of the
+    operand with signed integer type.
+
+    \item 2e) Otherwise, both operands are converted to the unsigned integer type
+    corresponding to the type of the operand with signed integer type.
+\end{itemize}
+
+\subsubsection{Rule 2c interpretation}
+The gist of 2c is to make sense of
+expressions like z = a+b where a is singed number and b is unsigned number. Now
+a 4 byte signed int is added to 8 byte unsigned long long, according
+to this rule 4 byte signed int will become 8 byte unsigned long long. The
+important point to remember here is conversion of signed int to unsigned long
+long, The way the compiler does this is by sign extend 4 byte signed number so
+that its absolute value will not change i.e.., -10 remain -10 whether it is a 4
+byte or 8 byte. But according to these rules the expression will have the type
+unsigned long long so statements like below will result in unexpected behavior.
+Since the var1+var2 is an unsigned expression the compiler will enforce it by
+using a unsigned jump instruction called jae instead of jge instruction.
+
+Whenever a signed data type has to be converted to unsigned data type the
+absolute value remains unchanged because of sign extension will be done using
+movsx instruction. So if a variable is type signed short with value -10, when
+this variable is sign extended to unsigned int the value of even after the
+conversion remains -10 when interpreted as singed int because the binary
+represent for -10 for 2 byte storage and 4 byte storage yields the same.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{signed-short-to-unsigned-int.png}
+\caption{signed number converted to unsigned numbers}
+\end{figure}
+
+\href{https://godbolt.org/}{godbolt's compiler explorer} is very helpful in
+understanding how the compiler translate expressions and apply the above rules.
+Clang AST view especially helps in graphically looking at how these
+promotions/conversion happen
+
+\begin{minted}{c}
+signed int var1 = -100;
+unsigned long long var2 = 10;
+if (var1 + var2 < 0) { //resulting unsigned long long expression will never be lessthan 0
+    printf("This will never get printed");
+}
+\end{minted}
+\begin{minted}{asm}
+$LN4:
+        sub     rsp, 56                             ; 00000038H
+        mov     DWORD PTR var1$[rsp], -100                ; ffffffffffffff9cH
+        mov     QWORD PTR var2$[rsp], 10
+        movsxd  rax, DWORD PTR var1$[rsp]
+        add     rax, QWORD PTR var2$[rsp]
+        test    rax, rax
+        jae     SHORT $LN2@main             --> jae is an unsigned jump for above or equal
+        lea     rcx, OFFSET FLAT:$SG4416
+        call    printf
+$LN2@main:
+        xor     eax, eax
+        add     rsp, 56                             ; 00000038H
+        ret     0
+main    ENDP
+\end{minted}
+\begin{minted}{text}
+Fragment of clang's AST for above program
+
+      |-BinaryOperator <line:7:9, col:23> 'bool' '<'
+      | |-BinaryOperator <col:9, col:16> 'unsigned long long' '+'
+      | | |-ImplicitCastExpr <col:9> 'unsigned long long' <IntegralCast>
+      | | | `-ImplicitCastExpr <col:9> 'int' <LValueToRValue>
+      | | |   `-DeclRefExpr <col:9> 'int' lvalue Var 0x55ea65e030e0 'var1' 'int'
+      | | `-ImplicitCastExpr <col:16> 'unsigned long long' <LValueToRValue>
+      | |   `-DeclRefExpr <col:16> 'unsigned long long' lvalue Var 0x55ea65e031b0 'var2' 'unsigned long long'
+      | `-ImplicitCastExpr <col:23> 'unsigned long long' <IntegralCast>
+      |   `-IntegerLiteral <col:23> 'int' 0
+\end{minted}
+
+
+These rules can only dictate what need to be done for each expression in a
+statement one at a time.  it cannot not determine the type of the complete
+statement at once because of this we might end up with unexpected results if
+we are not careful enough about how the type is propagating.
+for example,in var = exp1 + exp2*exp3 the rules can only tell how exp2*exp3
+interact and how that result interact with exp1. exp2*exp3's new type may not
+gel well with exp1 and might result in unexpected result.
+
+\subsubsection{Rule 2d interpretation}
+Rule 2d tries to make sense when you have two variables with small
+unsigned number and signed number are present in an expression and the
+singed storage can actually hold the unsigned number entirely, then by this
+rule, the unsigned number gets converted to signed number.
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{unsigned-short-to-signed-int.png}
+\caption{unsigned number converted to signed numbers}
+\end{figure}
+
+For example:
+\begin{minted}{c}
+unsigned int var1 = 100;
+signed long long var2 = -10;
+if (var1 + var2 < 0) { //resulting in signed long long expression
+    printf("This gets printed if var1 + var2 is < 0");
+}
+\end{minted}
+\begin{minted}{asm}
+        sub     rsp, 56                             ; 00000038H
+        mov     DWORD PTR var1$[rsp], 100   ; 00000064H
+        mov     QWORD PTR var2$[rsp], -10
+        mov     eax, DWORD PTR var1$[rsp]
+        add     rax, QWORD PTR var2$[rsp]
+        test    rax, rax
+        jge     SHORT $LN2@main
+        lea     rcx, OFFSET FLAT:$SG4869
+        call    printf
+$LN2@main:
+        xor     eax, eax
+        add     rsp, 56                             ; 00000038H
+        ret     0
+main    ENDP
+\end{minted}
+\begin{minted}{text}
+Fragment of clang's AST for above program
+
+      |-BinaryOperator <line:7:9, col:23> 'bool' '<'
+      | |-BinaryOperator <col:9, col:16> 'long long' '+'
+      | | |-ImplicitCastExpr <col:9> 'long long' <IntegralCast>
+      | | | `-ImplicitCastExpr <col:9> 'unsigned int' <LValueToRValue>
+      | | |   `-DeclRefExpr <col:9> 'unsigned int' lvalue Var 0x56305e1200e0 'var1' 'unsigned int'
+      | | `-ImplicitCastExpr <col:16> 'long long' <LValueToRValue>
+      | |   `-DeclRefExpr <col:16> 'long long' lvalue Var 0x56305e1201a8 'var2' 'long long'
+      | `-ImplicitCastExpr <col:23> 'long long' <IntegralCast>
+      |   `-IntegerLiteral <col:23> 'int' 0
+\end{minted}
+
+\subsubsection{Rule 2e interpretation}
+And finally, Rule 2e is applied only between unsigned int and signed long
+because neither 2c,2d fits these type on LLP64 model. One interesting thing we
+can observe if read between the lines is, the resultant type has unsignedness
+but the type is of signed variable and also both operand types are converted
+unlike other rules.
+For example:
+\begin{minted}{c}
+unsigned int var1 = 100; // this gets converted to unsigned long
+signed long var2 = -10;  // this will also converted to unsigned long
+if (var1 + var2 < 0) { //resulting type is unsigned long
+    printf("This will not be printed");
+}
+\end{minted}
+\begin{minted}{asm}
+        sub     rsp, 56                             ; 00000038H
+        mov     DWORD PTR var1$[rsp], 100   ; 00000064H
+        mov     DWORD PTR var2$[rsp], -10
+        mov     eax, DWORD PTR var2$[rsp]
+        mov     ecx, DWORD PTR var1$[rsp]
+        add     ecx, eax
+        mov     eax, ecx
+        test    eax, eax
+        jae     SHORT $LN2@main
+        lea     rcx, OFFSET FLAT:$SG4869
+        call    printf
+$LN2@main:
+        xor     eax, eax
+        add     rsp, 56                             ; 00000038H
+        ret     0
+main    ENDP
+\end{minted}
+\begin{minted}{text}
+Fragment of clang's AST for above program
+
+      |-BinaryOperator <line:7:9, col:23> 'bool' '<'
+      | |-BinaryOperator <col:9, col:16> 'long' '+'
+      | | |-ImplicitCastExpr <col:9> 'long' <IntegralCast>
+      | | | `-ImplicitCastExpr <col:9> 'unsigned int' <LValueToRValue>
+      | | |   `-DeclRefExpr <col:9> 'unsigned int' lvalue Var 0x564cedbd0100 'var1' 'unsigned int'
+      | | `-ImplicitCastExpr <col:16> 'long' <LValueToRValue>
+      | |   `-DeclRefExpr <col:16> 'long' lvalue Var 0x564cedbd01c8 'var2' 'long'
+      | `-ImplicitCastExpr <col:23> 'long' <IntegralCast>
+      |   `-IntegerLiteral <col:23> 'int' 0
+\end{minted}
+
+\subsection{Integer conversion matrix on LLP64 Programming Model}
+Below table summaries the rules applied for each expression combination
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Integer-Arithmetic-All-Datatypes.png}
+\caption{Rules applied for each combination of expression}
+\end{figure}
+
+Below table summaries the resulting data type of the expression
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Resulting-Datatypes.png}
+\caption{Resulting type of the expression}
+\end{figure}
+
+Note: Above table is for LLP64 programming model used under Windows x64
 
 \section{References}
 \begin{enumerate}[noitemsep]
