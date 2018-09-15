@@ -6,7 +6,7 @@
 \begin{titlepage}
    \vspace*{\stretch{1.0}}
    \begin{center}
-      \Large\textsc{C Signed/Unsigned Integer Arithmetic 101}\\
+      \Large\textsc{Signed/Unsigned Integer Arithmetic in C}\\
       \vspace{5mm}
       \Large\textit{Vineel Kovvuri}\\
       \url{http://vineelkovvuri.com}\\
@@ -20,17 +20,17 @@
 \section{Introduction}
 This article is about understanding how integer conversions happen in C
 language. C standard defines the integer conversion rules not specific to any
-architecture. This makes things more complicated for the programmers to try and
+architecture. It makes things more complicated for the programmers to try and
 understand them.
 
 Why do we need integer conversions at all? The answer is simple we need to have
-one single type for the expression that we are dealing with. Let's say we have
-an expression \textless expr1\textgreater \textless op\textgreater
-\textless expr2\textgreater  when expr1 and expr2 are different types, we
-want the resulting expression from this to have one type.
+single type for the expression. Let's say we have an expression \textless
+expr1\textgreater \textless op\textgreater \textless expr2\textgreater  when
+expr1 and expr2 are different types, we want the resulting expression from this
+to have one type.
 
 The C99 specification below set of integer types called 'standard integer
-types'. Interestingly, the sizes of these integer types is not defined at all.
+types'. Interestingly, the sizes of these integer types are not defined at all.
 It only defines the minimum supported size. For example, int need not be 8 bytes
 long on x64 platforms, the only definition for int is it should have at least 16
 bits and similarly long should have at least 32 bits it need not be 8 bytes
@@ -58,23 +58,23 @@ that we are sticking to in this article.
 \end{center}
 
 Also, The specification leaves other aspects of C language definition undefined
-and this made room for optimization for the compilers.
-For example, the result of signed arithmetic leading to overflow/underflow is
-not defined because the specification predates to the machine architectures when
-2's complement representation for -ve numbers is not universal, Even though
-virtually every architecture now uses 2's complement representation for -ve
-numbers. Hence the result of unsigned overflow/underflow is well defined but not
-signed overflow/underflow!
+and this made room for optimization for the compilers. For example, the result
+of signed arithmetic leading to overflow/underflow is not defined because the
+specification predates to the machine architectures when 2's complement
+representation for -ve numbers is not universal, Even though virtually every
+architecture now uses 2's complement representation for -ve numbers. Hence the
+result of unsigned overflow/underflow is well defined but not signed
+overflow/underflow!
 
 \section{How signed-ness is represented in the hardware?}
 Processors do have the concept of signed/unsigned, but unlike in C language,
-where this information is baked in to the variable type definition, processor
+where this information is baked into the variable type definition, processor
 registers do not hold this type information. After all, registers are just
 placeholders data. But the instructions themselves have the notion of
 signed/unsigned, That is why we have signed 'imul', unsigned 'mul', signed
 (JL/JG) vs unsigned(JB/JA) jump instructions. This is an important distinction
 between programming languages and machine code. It helps in understanding how
-high level code gets translated to underlying machine code. Instructions which
+high-level code gets translated to underlying machine code. Instructions which
 produce/consume signed data understand that -ve numbers should be in 2's
 complement form. So if a register (8bit) has 11110110 it's up to the instruction
 to treat that data as either -10 (signed) or 246 (unsigned). If an operation
@@ -85,7 +85,7 @@ arithmetic.
 
 \section{How signed-ness is interpreted in assembly?}
 In one of the above paragraphs, we said, processor registers does not hold any
-signed/unsigned type information with them and its up to the instructions to
+signed/unsigned type information with them and it's up to the instructions to
 interpret the data as either signed or unsigned. But the interesting thing
 about x86/x64 processors is they provide a flag register where some of the
 bits are called Status Flags. These bits represent the specific effect of
@@ -97,7 +97,7 @@ The most important flags of these for our discussion are
     \item Carry flag - Set if an arithmetic operation generates a carry or a borrow out of the most-
 significant bit of the result; cleared otherwise. \textbf{This flag indicates
 an overflow condition for unsigned-integer arithmetic}.
-    \item Sign flag - Set equal to the most-significant bit of the result, which is the sign bit of a signed
+    \item Sign flag - Set equal to the most significant bit of the result, which is the sign bit of a signed
 integer. (0 indicates a positive value and 1 indicates a negative value.)
     \item Overflow flag - Set if the integer result is \textbf{too large a
     positive number or too small a negative number (excluding the sign-bit) to
@@ -106,22 +106,25 @@ indicates an overflow condition for signed-integer (two's complement) arithmetic
 \end{enumerate}
 
 Of the above three status flags, Carry flag is obvious but other two flags need
-some explanation. Sign flag is set irrespective of weather you are treating the
+some explanation. Sign flag is set irrespective of whether you are treating the
+numbers as positive or negative, All it cares is if the result's MSB is set or
+not.
 
-for example in below code, 'sub' can treat 0x81 as -127 or +129. So the result
+For example in below code, 'sub' can treat 0x81 as -127 or +129. So the result
 can also be either interpreted as -128 or +128, But the processor after
-executing 'sub' it indicates this posibility in Sign Flag. So operations(JA/JB)
-who want to treat the result a unsigned will ignore this sign flag where as
-operations (like JG/JL) who treat it as signed will take this sign flag in to
+executing 'sub' it indicates this possibility in Sign Flag. So operations(JA/JB)
+who want to treat the result an unsigned will ignore this sign flag whereas
+operations (like JG/JL) who treat it as signed will take this sign flag into
 account.
 \begin{minted}{asm}
     mov al, 0x81
     sub al, 0x1     // This triggers sign flag
 \end{minted}
 
-Overflow flag is little different. First of all, Overflow flag is not set when
-an operation results in overflow of number that can be represented in a
-register. Like for example, if we try to add 1 to 0xff does not set this bit.
+Overflow flag is a little different. First of all, the Overflow flag is not set
+when an operation results in an overflow of the number that can be represented
+in a register. Like for example, if we try to add 1 to 0xff does not set this
+bit.
 \begin{minted}{asm}
     mov al, 0xFF // 0b11111111
     add al, 0x1  // This will not trigger Overflow flag
@@ -175,20 +178,21 @@ the way in which +ve numbers are represented. If let's say a data type has 1
 byte of storage then the possible bit representation will be from  0b00000000(0)
 - 0b11111111(255). Now, these 255 valid slots can be interpreted as all positive
 numbers or divide the range into two halves and call one half of the slot as
-positive and other as negative numbers. There are other alternate representation
+positive and other as negative numbers. There are other alternate representations
 for -ve number but almost all systems use 2's complement notation to represent
 -ve numbers. The take away here is if we include -ve number in the 255 slots
 then we will represent from -128 to 127. According to 2's complement notation
 -128 is represented as 0b10000000(0x80) whereas 127 is represented as 0b01111111
 (0x7F).
 
-\section{Integer Arithmetic Conversion in C}
+\section{Integer Arithmetic Conversions in C}
 C language defines below set of rules to convert the arguments in an expression.
 
 \subsection{Rank}
 Every integer type has an integer conversion rank defined as follows:
 \begin{enumerate}[noitemsep]
-    \item No two signed integer types shall have the same rank, even if they have the same representation.
+    \item No two signed integer types shall have the same rank, even if they
+    have the same representation.
     \item The rank of a signed integer type shall be greater than the rank of any signed integer
     type with less precision.
     \item The rank of long long int shall be greater than the rank of long int, which
@@ -213,7 +217,7 @@ At a high level the gist of above rules is as follows
  Rank(signed char) ==  Rank(unsigned char) <  Rank(signed short) ==  Rank(unsigned short) <  Rank(signed int) ==  Rank(unsigned int) <  Rank(signed long) ==  Rank(unsigned long) <  Rank(signed long long) ==  Rank(unsigned long long)
 \end{minted}
 
-\subsection{Integer Promotion}
+\subsection{Integer Promotions}
     The following may be used in an expression wherever an int or unsigned int may
     be used:
     \begin{itemize}[noitemsep]
@@ -243,7 +247,7 @@ At a high level the gist of above rules is as follows
     \item 2d) Otherwise, if the type of the operand with signed integer type can represent
     all of the values of the type of the operand with unsigned integer type, then
     the operand with unsigned integer type is converted to the type of the
-    operand with signed integer type.
+    operand with a signed integer type.
 
     \item 2e) Otherwise, both operands are converted to the unsigned integer type
     corresponding to the type of the operand with signed integer type.
@@ -276,7 +280,7 @@ represent for -10 for 2 byte storage and 4 byte storage yields the same.
 \end{figure}
 
 \href{https://godbolt.org/}{godbolt's compiler explorer} is very helpful in
-understanding how the compiler translate expressions and apply the above rules.
+understanding how the compiler translates expressions and apply the above rules.
 Clang AST view especially helps in graphically looking at how these
 promotions/conversion happen
 
@@ -320,17 +324,17 @@ Fragment of clang's AST for above program
 
 
 These rules can only dictate what need to be done for each expression in a
-statement one at a time.  it cannot not determine the type of the complete
+statement one at a time. It cannot determine the type of the complete
 statement at once because of this we might end up with unexpected results if
 we are not careful enough about how the type is propagating.
 for example,in var = exp1 + exp2*exp3 the rules can only tell how exp2*exp3
-interact and how that result interact with exp1. exp2*exp3's new type may not
-gel well with exp1 and might result in unexpected result.
+interact and how that result interacts with exp1. exp2*exp3's new type may not
+gel well with exp1 and might result in an unexpected result.
 
 \subsubsection{Rule 2d interpretation}
 Rule 2d tries to make sense when you have two variables with small
-unsigned number and signed number are present in an expression and the
-singed storage can actually hold the unsigned number entirely, then by this
+the unsigned number and signed number are present in an expression and the
+singed storage can hold the unsigned number entirely, then by this
 rule, the unsigned number gets converted to signed number.
 
 
@@ -439,7 +443,6 @@ Below table summaries the resulting data type of the expression
 \caption{Resulting type of the expression}
 \end{figure}
 
-Note: Above table is for LLP64 programming model used under Windows x64
 
 \section{References}
 \begin{enumerate}[noitemsep]
