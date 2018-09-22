@@ -1,13 +1,14 @@
 Today, I was really surprise by the following fact in C.
 In Windows, we have BYTE typedefed to unsigned char, and PBYTE typedefed to
-BYTE*, So what I excepted these typedefs to work in scenario as well.
+BYTE*, So I excepted following use of typedefs to work in scenario.
 
 CONST BYTE x = 10;
-CONST BYTE* y = &x; //y is a pointer to constant BYTE x, meaning *y = 20 fails
-buy y = &a works.
-CONST PBYTE z = &x; // because i assumed BYTE* and PBYTE are one and the same I
-assumed CONST BYTE* and CONST PBYTE are also one and the same. And this is
-completely incorrect. Looks like const do not gel well with typedef.
+CONST BYTE* y = &x; //y is a pointer to constant BYTE x, and *y = 20 fails and y = &a works.
+
+CONST PBYTE z = &x; // And i assumed(wrong) BYTE* and PBYTE are one and the same I
+when applied with COSNT and felt that CONST BYTE* and CONST PBYTE are also one
+and the same. And this is completely incorrect. Looks like const do not gel well
+with typedef.
 
 
 CONST PBYTE z = &x;// wont compile because CONST PBYTE z means  BYTE* CONST z
@@ -76,7 +77,7 @@ main()
 
 }
 --------------------------------------------------------------------------------
-Another learning in MemChr. it passes Buffer pointer as pointer to Const data
-using CONST VOID* Buffer but expects the function to return pointer to non const
-data as PVOID !!!!.
+Another learning in MemChr is, it passes Buffer as pointer to Const data
+using CONST VOID* but expects the function to return a pointer to non const
+data as PVOID!!!!. This violates the const correctness.
 
